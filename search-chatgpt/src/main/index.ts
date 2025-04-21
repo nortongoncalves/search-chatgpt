@@ -1,14 +1,59 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join } from 'path'
+import { app, shell, BrowserWindow, ipcMain, screen } from 'electron'
+import path, { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import 'dotenv/config';
+import { Response } from 'openai/core';
 
-function createWindow(): void {
-  // Create the browser window.
+async function handleSubmit(_: unknown, data: string) {
+  if (!data) return;
+  createResponseWindow(data as any);
+}
+
+function createResponseWindow(data: Response) {
+  const { width } = screen.getPrimaryDisplay().size;
+  const windowWidth = width * 0.8;
+  const centerPosition = Math.round((width - windowWidth) / 1.5);
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
-    show: false,
+    width: windowWidth,
+    height: 500,
+    x: centerPosition,
+    y: 300,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: false,
+    skipTaskbar: true,
+    focusable: true,
+    autoHideMenuBar: true,
+  });
+
+  mainWindow.on('ready-to-show', async () => {
+    mainWindow.show();
+  });
+
+  if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
+    mainWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/response.html`)
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../renderer/response.html'))
+  }
+}
+
+function createSearchWindow(): void {
+  const { width } = screen.getPrimaryDisplay().size;
+  const windowWidth = width * 0.4;
+  const centerPosition = Math.round((width - windowWidth) / 1.3);
+  const mainWindow = new BrowserWindow({
+    width: windowWidth,
+    height: 100,
+    x: centerPosition,
+    y: 100,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: false,
+    skipTaskbar: true,
+    focusable: true,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
@@ -50,14 +95,14 @@ app.whenReady().then(() => {
   })
 
   // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
+  ipcMain.on('Submit', handleSubmit)
 
-  createWindow()
+  createSearchWindow()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) createSearchWindow()
   })
 })
 
