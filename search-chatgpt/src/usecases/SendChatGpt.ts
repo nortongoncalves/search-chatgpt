@@ -11,8 +11,10 @@ type Params = {
   options?: Options;
 }
 
+export type Response = globalThis.Response;
+
 export class SendChatGpt {
-  async execute({ data, options }: Params) {
+  async execute({ data, options }: Params): Promise<Response> {
     if (!process.env.OpenAIApiKey) throw new Error('Inform your OpenAI ApiKey');
     const client = new OpenAI({
       apiKey: process.env.OpenAIApiKey,
